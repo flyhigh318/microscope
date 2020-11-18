@@ -1,0 +1,69 @@
+version: "1"
+services:
+  monit_workcondition:
+    cloudId: public #监控云id
+    tenantId:  #监控租户ID,多个逗号隔开3907e38b,t2,5252df9f
+    interval: 10 #监控间隔时间 （整数，仅支持分钟）
+    rule:
+      - {type: 1,begin: '00:00:00',end: '08:59:59',min: 50,max: 99999,normal: 1000,level: '0' } #type=1 最小值 最大值监控
+      - {type: 1,begin: '06:00:00',end: '18:59:59',min: 1000,max: 100000,normal: 1000,level: '0' }
+      - {type: 2,min: 50,max: 200,level: '0' } #type=2 环比昨天同一时间区间的值 min和max单位是百分比%
+      - {type: 3,min: 50,max: 200,level: '0' } #type=3 环比上周的这一天同一时间区间的值 min和max单位是百分比%
+
+  monit_instruction:
+    cloudName: public #监控云id
+    # teanantId__deviceTypeId: s_t_connect__GYPT_23757_S_modelId_20201110141937_57279,5fa20aa1b7a37300599347ec__V81pG81Uli,3907e38b__bum,t2__bum,t1__bum,5e1d63c608584a00385ce81c__bum,5e1d63c608584a00385ce81c__zjy_Test  #监控租户ID__模型ID,租户ID与模型ID用双下划线间隔，多个时使用逗号隔开 
+    teanantId__deviceTypeId: 38c3c2e4__pt-mt11745,38c3c2e4__GA2out20000,38c3c2e4__zhilingconnect1000 #监控租户ID__模型ID,租户ID与模型ID用双下划线间隔，多个时使用逗号隔开 
+    rules:
+      ruleInterval: 10  #监控间隔时间，查询设备sendTime时间范围（整数，仅支持分钟）
+      ruleCmdDelayRatio: 20 #设备下发指令延迟数占下发指令总数的百分比 （整数）
+      ruleDevicesDelayRatio: 60 #下发指令延迟的设备数占下发指令设备总数的百分比 （整数）
+    alarm:
+      deviceTypeId:
+        level: 
+          p0:
+            value: 70
+            descrition: 模型延迟率大于70%,程度紧急
+          p1:
+            value: 50
+            descrition:  模型延迟率大于50%小于p0 value值 70%,程度一般   
+
+database:
+  influxdb: influxproxy.iot-qa.rootcloudapp.com:80 #多个influx-proxy用,隔开如influxA,influxB
+  influxdb_user:
+    -
+  # mongodb: 
+  #   url: 10.70.40.10:27017,10.70.40.42:27017,10.70.40.12:27017
+  #   user: Testuser
+  #   passwd: Testuser4
+  #   authSource: admin
+  #   authMechanism: SCRAM-SHA-256
+  mongodb: 
+    url: 10.70.31.68:27017,10.70.31.138:27017,10.70.31.74:27017
+    url: 10.70.31.68:27017,10.70.31.74:27017
+    user: mongouser
+    passwd: kZ3FnwcHxgWPxd
+    authSource: admin
+    authMechanism: SCRAM-SHA-256
+
+microscope:
+  database:
+    mysql:
+      host: microscope-mysql
+      port: 3306
+      user: root             
+      passwd: rootcloud        
+      name: rootcloud
+      charset: utf8
+    redis:
+      host: microscope-redis
+      port: 6379
+      user: root
+      passwd: celery
+    rabbitmq:
+      host: microscope-rabbitmq
+      port: 5672
+      user: rootcloud
+      passwd: celery
+
+

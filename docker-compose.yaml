@@ -1,0 +1,284 @@
+version: '3'
+services:
+  microscope-ui:
+    user: micro
+    restart: always
+    image: microscope:1.0.2
+    container_name: microscope-ui
+    ports:
+      - 8000:8000
+    command:
+      - /bin/sh 
+      - -c 
+      - |
+        while [ 1 ];do 
+          nc -vz -w 2 microscope-mysql 3306 >/dev/null 2>&1 && 
+          echo "`date +'%F %T'` service mysql is ready" &&
+          nc -vz -w 2 microscope-redis 6379 >/dev/null 2>&1 &&
+          echo "`date +'%F %T'` service redis is ready" && 
+          wget --spider --tries=1 -T 2 http://microscope-rabbitmq:15672 >/dev/null 2>&1 &&
+          nc -vz -w 2 microscope-rabbitmq 5672 >/dev/null 2>&1 &&
+          echo "`date +'%F %T'` service rabbitmq is ready" &&
+          break || 
+          echo "`date +'%F %T'` wait for service mysql redis rabbitmq ready ***"
+          sleep 1
+        done
+        cd /microscope/monitor
+        python manage.py makemigrations
+        python manage.py migrate 
+        python manage.py runserver 0.0.0.0:8000
+    links: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+    depends_on: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+
+  celery-worker:
+    user: micro
+    restart: always
+    image: microscope:1.0.2
+    container_name: celery-worker
+    command:
+      - /bin/sh 
+      - -c 
+      - |
+        cat > /tmp/check_port.sh <<EOF
+        #!/bin/sh
+        for i in \`seq 86400\`;do 
+          nc -vz -w 2 microscope-mysql 3306 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service mysql is ready" && \
+          nc -vz -w 2 microscope-redis 6379 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service redis is ready" && \
+          nc -vz -w 2 microscope-rabbitmq 15672 >/dev/null 2>&1 && \
+          nc -vz -w 2 microscope-rabbitmq 5672 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service rabbitmq is ready" && \
+          nc -vz -w 2 microscope-ui 8000 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service microscope-ui is ready" && \
+          break ||
+          echo "`date +'%F %T'` wait for service mysql redis rabbitmq microscope-ui ready ***"
+          sleep 1
+        done
+        EOF
+        chmod 700 /tmp/check_port.sh
+        /tmp/check_port.sh
+        cd /microscope/monitor 
+        celery -A monitor worker -l info
+    links: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui
+    depends_on: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui
+
+  celery-beat:
+    user: micro
+    restart: always
+    image: microscope:1.0.2
+    container_name: celery-beat
+    command:
+      - /bin/sh 
+      - -c 
+      - |
+        cat > /tmp/check_port.sh <<EOF
+        #!/bin/sh
+        for i in \`seq 86400\`
+        do
+          nc -vz -w 2 microscope-mysql 3306 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service mysql is ready" && \
+          nc -vz -w 2 microscope-redis 6379 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service redis is ready" && \
+          nc -vz -w 2 microscope-rabbitmq 15672 >/dev/null 2>&1 && \
+          nc -vz -w 2 microscope-rabbitmq 5672 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service rabbitmq is ready" && \
+          nc -vz -w 2 microscope-ui 8000 >/dev/null 2>&1 && \
+          echo "`date +'%F %T'` service microscope-ui is ready" && \
+          break ||
+          echo "`date +'%F %T'` wait for service mysql redis rabbitmq microscope-ui ready ***"
+          sleep 1
+        done
+        EOF
+        chmod 700 /tmp/check_port.sh
+        /tmp/check_port.sh
+        cd /microscope/monitor 
+        celery -A monitor beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    links: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui
+    depends_on: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui
+
+  celery-flower:
+    user: micro
+    restart: always
+    image: microscope:1.0.2
+    container_name: celery-flower
+    ports: 
+      - 5555:5555
+    command:
+      - /bin/sh 
+      - -c 
+      - |
+        while [ 1 ];do 
+          nc -vz -w 2 microscope-mysql 3306 >/dev/null 2>&1 && 
+          echo "`date +'%F %T'` service mysql is ready" &&
+          nc -vz -w 2 microscope-redis 6379 >/dev/null 2>&1 &&
+          echo "`date +'%F %T'` service redis is ready" && 
+          wget --spider --tries=1 -T 2 http://microscope-rabbitmq:15672 >/dev/null 2>&1 &&
+          nc -vz -w 2 microscope-rabbitmq 5672 >/dev/null 2>&1 &&
+          echo "`date +'%F %T'` service rabbitmq is ready" &&
+          wget --spider --tries=1 -T 2 http://microscope-ui:8000/updata/index >/dev/null 2>&1 &&
+          echo "`date +'%F %T'` service microscope-ui is ready" &&
+          break || 
+          echo "`date +'%F %T'` wait for service mysql redis rabbitmq microscope-ui ready ***"
+          sleep 1
+        done
+        wget -O /tmp/loginuser.txt http://microscope-ui:8000/updata/index
+        cd /microscope/monitor 
+        celery flower -A monitor --broker=amqp://rootcloud:celery@microscope-rabbitmq:5672//
+    links: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui
+    depends_on: 
+      - microscope-mysql
+      - microscope-redis
+      - microscope-rabbitmq
+      - microscope-ui    
+      
+  microscope-redis:
+    image: redis:4.0
+    container_name: microscope-redis
+    restart: always
+    command:
+      - /bin/bash 
+      - -c 
+      - |
+        mkdir -p /usr/local/etc/redis
+        cat > /usr/local/etc/redis/redis.conf <<EOF
+        bind 0.0.0.0
+        protected-mode no
+        port 6379
+        timeout 0
+        save 900 1 
+        save 300 10
+        save 60 10000
+        rdbcompression yes
+        dbfilename dump.rdb
+        dir /data
+        appendonly yes
+        appendfsync everysec
+        requirepass celery
+        EOF
+        redis-server /usr/local/etc/redis/redis.conf
+
+  microscope-rabbitmq:
+    image: rabbitmq:3.8.2-management
+    container_name: microscope-rabbitmq
+    restart: always
+    hostname: celeryRabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      - RABBITMQ_DEFAULT_USER=rootcloud
+      - RABBITMQ_DEFAULT_PASS=celery
+
+  microscope-mysql:
+    restart: always
+    image: mysql:8.0
+    container_name: microscope-mysql
+    environment:
+      - "MYSQL_ROOT_PASSWORD=rootcloud"
+      - "MYSQL_DATABASE=rootcloud"
+      - "TZ=Asia/Shanghai"
+    ports:
+      - 3306:3306
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cat > /etc/my.cnf <<EOF
+        [mysqld]
+        user=mysql
+        default-storage-engine=INNODB
+        character-set-client-handshake=FALSE
+        character-set-server=utf8mb4
+        collation-server=utf8mb4_unicode_ci
+        init_connect='SET NAMES utf8mb4'
+        default_authentication_plugin=mysql_native_password
+        [client]
+        #utf8mb4字符集可以存储emoji表情字符
+        default-character-set=utf8mb4
+        [mysql]
+        default-character-set=utf8mb4
+        EOF
+        /usr/local/bin/docker-entrypoint.sh mysqld
+
+  prometheus:
+    image: quay.io/prometheus/prometheus:latest
+    container_name: microscope-prometheus
+    restart: always
+    entrypoint: [""]
+    command:
+      - /bin/sh
+      - -c 
+      - |
+        cat > /prometheus/prometheus.yml <<EOF         
+        # my global config
+        global:
+          scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+          evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+          # scrape_timeout is set to the global default (10s).
+        
+        # Alertmanager configuration
+        alerting:
+          alertmanagers:
+          - static_configs:
+            - targets:
+              # - alertmanager:9093
+        
+        # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+        rule_files:
+          # - "first_rules.yml"
+          # - "second_rules.yml"
+        
+        # A scrape configuration containing exactly one endpoint to scrape:
+        # Here it's Prometheus itself.
+        scrape_configs:
+          # The job name is added as a label 'job=<job_name>' to any timeseries scraped from this config.
+          - job_name: 'prometheus'
+        
+            # metrics_path defaults to '/metrics'
+            # scheme defaults to 'http'.
+        
+            static_configs:
+            - targets: ['localhost:9090']
+          - job_name: 'monitor_instruction'
+            metrics_path: '/updata/metric/'
+            static_configs:
+            - targets: ['microscope-ui:8000']
+          - job_name: 'monitor_workcondition'
+            metrics_path: '/workcondition/metric/'
+            static_configs:
+            - targets: ['microscope-ui:8000']            
+        EOF
+        /bin/prometheus --config.file=/prometheus/prometheus.yml --storage.tsdb.path=/prometheus
+    ports:
+      - 9090:9090 
+    links: 
+      - microscope-ui
+    depends_on:
+      - microscope-ui

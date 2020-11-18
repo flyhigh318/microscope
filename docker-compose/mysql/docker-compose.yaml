@@ -1,0 +1,15 @@
+version: '3'
+services:
+  mysql:
+    restart: always
+    image: mysql:8.0
+    container_name: monitor_mysql
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./conf/my.cnf:/etc/my.cnf
+    environment:
+      - "MYSQL_ROOT_PASSWORD=rootcloud"
+      - "MYSQL_DATABASE=rootcloud"
+      - "TZ=Asia/Shanghai"
+    ports:
+      - 3306:3306

@@ -1,0 +1,10 @@
+[2020-11-17 15:39:49,922] [autoreload.py:612] [autoreload:run_with_reloader] [INFO]- Watching for file changes with StatReloader
+[2020-11-17 15:40:02,520] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/updata/alarmdevicetypeidinstruntiondelay/ HTTP/1.1" 302 0
+[2020-11-17 15:40:02,588] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/login/?next=/admin/updata/alarmdevicetypeidinstruntiondelay/ HTTP/1.1" 200 2285
+[2020-11-17 15:40:07,565] [basehttp.py:157] [basehttp:log_message] [INFO]- "POST /admin/login/?next=/admin/updata/alarmdevicetypeidinstruntiondelay/ HTTP/1.1" 302 0
+[2020-11-17 15:40:08,001] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/updata/alarmdevicetypeidinstruntiondelay/ HTTP/1.1" 200 63994
+[2020-11-17 15:40:08,145] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/jsi18n/ HTTP/1.1" 200 7732
+[2020-11-17 15:40:12,744] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/django_celery_beat/periodictask/ HTTP/1.1" 200 15149
+[2020-11-17 15:40:13,027] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/jsi18n/ HTTP/1.1" 200 7732
+[2020-11-17 15:40:22,296] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/django_celery_beat/periodictask/add/ HTTP/1.1" 200 23829
+[2020-11-17 15:40:22,533] [basehttp.py:157] [basehttp:log_message] [INFO]- "GET /admin/jsi18n/ HTTP/1.1" 200 7732

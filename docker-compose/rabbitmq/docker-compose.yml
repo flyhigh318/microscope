@@ -1,0 +1,15 @@
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:3.8.2-management
+    container_name: rabbitmq
+    restart: always
+    hostname: celeryRabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
+    volumes:
+      - ./data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rootcloud
+      - RABBITMQ_DEFAULT_PASS=celery
